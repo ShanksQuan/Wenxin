@@ -4,7 +4,7 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
 from app.models.user_info import UserInfo
-from app.utils.ai_processor import process_text_with_ai, process_image_with_ai
+from app.utils.ai_process import process_text_with_ai, process_image_with_ai
 
 process_bp = Blueprint('process', __name__)
 
@@ -18,7 +18,7 @@ def allowed_file(filename):
 @jwt_required()
 def upload_info():
     """上传信息并进行分类处理"""
-    user_id = get_jwt_identity()
+    user_id =int( get_jwt_identity())
     
     # 检查是否有文件或文本内容
     if 'file' not in request.files and 'text' not in request.form:
@@ -138,7 +138,7 @@ def upload_info():
 @jwt_required()
 def get_info(info_id):
     """获取特定信息详情"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     info = UserInfo.query.filter_by(id=info_id, user_id=user_id).first()
     if not info:
@@ -159,7 +159,7 @@ def get_info(info_id):
 @jwt_required()
 def list_info():
     """列出用户的所有信息，支持分类筛选"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     # 获取查询参数
     category = request.args.get('category')

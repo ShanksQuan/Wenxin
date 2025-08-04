@@ -1,7 +1,10 @@
-import openai
-import base64
 import json
 from flask import current_app
+# Deleted: import openai
+# Deleted: import base64
+import dashscope
+from dashscope import Generation
+import base64
 
 def process_text_with_ai(text):
     """
@@ -9,7 +12,8 @@ def process_text_with_ai(text):
     返回信息项列表，每个包含内容和分类
     """
     try:
-        openai.api_key = current_app.config.get('OPENAI_API_KEY')
+        # Deleted: openai.api_key = current_app.config.get('OPENAI_API_KEY')
+        dashscope.api_key = current_app.config.get('DASHSCOPE_API_KEY')
         
         prompt = f"""
         请分析以下文本内容，从中提取出多个独立的信息项，并为每个信息项分配适当的分类。
@@ -36,17 +40,27 @@ def process_text_with_ai(text):
         只返回JSON数组，不要包含其他内容。
         """
         
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that extracts and categorizes information from text."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1000,
-            temperature=0.3
+        # Deleted: response = openai.ChatCompletion.create(
+        # Deleted:     model="gpt-3.5-turbo",
+        # Deleted:     messages=[
+        # Deleted:         {"role": "system", "content": "You are a helpful assistant that extracts and categorizes information from text."},
+        # Deleted:         {"role": "user", "content": prompt}
+        # Deleted:     ],
+        # Deleted:     max_tokens=1000,
+        # Deleted:     temperature=0.3
+        # Deleted: )
+        messages = [
+            {'role': 'system', 'content': 'You are a helpful assistant that extracts and categorizes information from text.'},
+            {'role': 'user', 'content': prompt}
+        ]
+        response = Generation.call(
+            model='qwen-plus',
+            messages=messages,
+            result_format='message'
         )
         
-        result_str = response.choices[0].message.content.strip()
+        # Deleted: result_str = response.choices[0].message.content.strip()
+        result_str = response.output.choices[0].message.content.strip()
         # 移除可能的markdown代码块标记
         if result_str.startswith("```"):
             result_str = result_str.split("\n", 1)[1]
@@ -78,7 +92,8 @@ def process_image_with_ai(image_path):
     返回信息项列表，每个包含内容和分类
     """
     try:
-        openai.api_key = current_app.config.get('OPENAI_API_KEY')
+        # Deleted: openai.api_key = current_app.config.get('OPENAI_API_KEY')
+        dashscope.api_key = current_app.config.get('DASHSCOPE_API_KEY')
         
         # 将图片转换为base64
         with open(image_path, "rb") as image_file:
@@ -106,26 +121,41 @@ def process_image_with_ai(image_path):
         只返回JSON数组，不要包含其他内容。
         """
         
-        response = openai.ChatCompletion.create(
-            model="gpt-4-vision-preview",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{encoded_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            max_tokens=1000
+        # Deleted: response = openai.ChatCompletion.create(
+        # Deleted:     model="gpt-4-vision-preview",
+        # Deleted:     messages=[
+        # Deleted:         {
+        # Deleted:             "role": "user",
+        # Deleted:             "content": [
+        # Deleted:                 {"type": "text", "text": prompt},
+        # Deleted:                 {
+        # Deleted:                     "type": "image_url",
+        # Deleted:                     "image_url": {
+        # Deleted:                         "url": f"data:image/jpeg;base64,{encoded_image}"
+        # Deleted:                     }
+        # Deleted:                 }
+        # Deleted:             ]
+        # Deleted:         }
+        # Deleted:     ],
+        # Deleted:     max_tokens=1000
+        # Deleted: )
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"text": prompt},
+                    {"image": f"data:image/jpeg;base64,{encoded_image}"}
+                ]
+            }
+        ]
+        response = Generation.call(
+            model='qwen-vl-plus',
+            messages=messages,
+            result_format='message'
         )
         
-        result_str = response.choices[0].message.content.strip()
+        # Deleted: result_str = response.choices[0].message.content.strip()
+        result_str = response.output.choices[0].message.content.strip()
         # 移除可能的markdown代码块标记
         if result_str.startswith("```"):
             result_str = result_str.split("\n", 1)[1]

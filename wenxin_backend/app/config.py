@@ -14,7 +14,7 @@ class Config:
     
     # 服务配置
     VECTOR_DB_URL = os.getenv('VECTOR_DB_URL')
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    DASHSCOPE_API_KEY = os.getenv('DASHSCOPE_API_KEY')
     SPEECH_API_KEY = os.getenv('SPEECH_RECOGNITION_API_KEY')
     OCR_API_KEY = os.getenv('OCR_API_KEY')
     
