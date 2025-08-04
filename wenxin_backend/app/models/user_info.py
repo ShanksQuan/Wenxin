@@ -29,5 +29,8 @@ class UserInfo(db.Model):
     content = db.Column(db.Text)  # 文本内容或文件路径
     metadata_info = db.Column(db.JSON)  # 元数据
     vector_id = db.Column(db.String(64))  # 向量数据库ID
+    category = db.Column(db.String(32), default='temporary')  # 分类: temporary, meeting, work, finance
+    title = db.Column(db.String(255))  # 提取的信息标题
+    description = db.Column(db.Text)  # 提取的信息详细描述
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)

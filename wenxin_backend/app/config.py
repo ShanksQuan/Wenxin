@@ -21,6 +21,9 @@ class Config:
     # 安全配置
     ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
 
+    # 文件上传配置
+    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'uploads')
+    
 class DevelopmentConfig(Config):
     """开发环境配置"""
     DEBUG = True
