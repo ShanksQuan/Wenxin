@@ -12,6 +12,10 @@ class Config:
     JWT_SECRET_KEY = os.getenv('SECRET_KEY')
     JWT_ACCESS_TOKEN_EXPIRES = int(os.getenv('JWT_EXPIRATION_DELTA', 86400))
     
+     # JWT黑名单配置
+    JWT_BLACKLIST_ENABLED = True
+    JWT_BLACKLIST_TOKEN_CHECKS = ['access']
+    
     # 服务配置
     VECTOR_DB_URL = os.getenv('VECTOR_DB_URL')
     DASHSCOPE_API_KEY = os.getenv('DASHSCOPE_API_KEY')

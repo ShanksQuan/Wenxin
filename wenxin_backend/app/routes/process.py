@@ -137,7 +137,8 @@ def upload_info():
     return jsonify({
         'message': '信息上传并分类成功',
         'info_items': info_items
-    }), 201@process_bp.route('/info', methods=['GET'])
+    }), 201
+
 
 
 @process_bp.route('/info', methods=['GET'])

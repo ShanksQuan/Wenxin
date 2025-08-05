@@ -40,15 +40,7 @@ def process_text_with_ai(text):
         只返回JSON数组，不要包含其他内容。
         """
         
-        # Deleted: response = openai.ChatCompletion.create(
-        # Deleted:     model="gpt-3.5-turbo",
-        # Deleted:     messages=[
-        # Deleted:         {"role": "system", "content": "You are a helpful assistant that extracts and categorizes information from text."},
-        # Deleted:         {"role": "user", "content": prompt}
-        # Deleted:     ],
-        # Deleted:     max_tokens=1000,
-        # Deleted:     temperature=0.3
-        # Deleted: )
+    
         messages = [
             {'role': 'system', 'content': 'You are a helpful assistant that extracts and categorizes information from text.'},
             {'role': 'user', 'content': prompt}
@@ -59,7 +51,7 @@ def process_text_with_ai(text):
             result_format='message'
         )
         
-        # Deleted: result_str = response.choices[0].message.content.strip()
+        
         result_str = response.output.choices[0].message.content.strip()
         # 移除可能的markdown代码块标记
         if result_str.startswith("```"):
@@ -92,7 +84,7 @@ def process_image_with_ai(image_path):
     返回信息项列表，每个包含内容和分类
     """
     try:
-        # Deleted: openai.api_key = current_app.config.get('OPENAI_API_KEY')
+        
         dashscope.api_key = current_app.config.get('DASHSCOPE_API_KEY')
         
         # 将图片转换为base64
@@ -103,10 +95,17 @@ def process_image_with_ai(image_path):
         请分析这张图片中的内容，从中提取出多个独立的信息项，并为每个信息项分配适当的分类。
         
         分类选项：
-        1. temporary (临时杂项) - 日常琐事、临时想法等
-        2. meeting (会议安排) - 会议时间、地点、议题等
-        3. work (工作安排) - 任务、项目、工作计划等
-        4. finance (收入支出) - 费用、收入、预算等
+        1. temporary (临时杂项) - 日常琐事、临时想法、便签、随手记录等
+        2. meeting (会议安排) - 会议时间、地点、议题、参会人员、会议记录等
+        3. work (工作安排) - 任务清单、项目计划、工作进度、待办事项、工作笔记等
+        4. finance (收入支出) - 发票、收据、账单、预算表、费用明细、工资条等
+
+        要求：
+        1. 仔细识别图片中的文字内容和语义信息
+        2. 每个信息项应该是一个完整的、有意义的信息单元
+        3. 标题应该简洁明了，描述应该详细准确
+        4. 严格按照上述4个分类进行归类，不要创造新的分类
+        5. 如果无法识别有效信息，请返回空数组[]
         
         请按照以下JSON格式返回结果：
         [
@@ -121,24 +120,7 @@ def process_image_with_ai(image_path):
         只返回JSON数组，不要包含其他内容。
         """
         
-        # Deleted: response = openai.ChatCompletion.create(
-        # Deleted:     model="gpt-4-vision-preview",
-        # Deleted:     messages=[
-        # Deleted:         {
-        # Deleted:             "role": "user",
-        # Deleted:             "content": [
-        # Deleted:                 {"type": "text", "text": prompt},
-        # Deleted:                 {
-        # Deleted:                     "type": "image_url",
-        # Deleted:                     "image_url": {
-        # Deleted:                         "url": f"data:image/jpeg;base64,{encoded_image}"
-        # Deleted:                     }
-        # Deleted:                 }
-        # Deleted:             ]
-        # Deleted:         }
-        # Deleted:     ],
-        # Deleted:     max_tokens=1000
-        # Deleted: )
+        
         messages = [
             {
                 "role": "user",
@@ -149,9 +131,14 @@ def process_image_with_ai(image_path):
             }
         ]
         response = Generation.call(
-            model='qwen-vl-plus',
+            model='qwen-vl-ocr',
             messages=messages,
-            result_format='message'
+            result_format='message',
+            temperature=0.7,        # 对于OCR任务，较低的temperature更好
+            top_p=0.8,
+            top_k=50,
+            max_tokens=1500,        # OCR需要更多token
+            repetition_penalty=1.05
         )
         
         # Deleted: result_str = response.choices[0].message.content.strip()

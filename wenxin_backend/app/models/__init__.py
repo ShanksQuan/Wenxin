@@ -1,2 +1,1 @@
-
-from app.models.user_info import User, UserInfo
+from app.models.user_info import User, UserInfo, TokenBlocklist

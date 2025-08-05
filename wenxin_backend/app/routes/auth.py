@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token
-from app.models.user_info import User
+from flask_jwt_extended import create_access_token, get_jwt
+from app.models.user_info import User,TokenBlocklist
 from app.extensions import db
 from app.utils.auth import verify_password
+from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -38,3 +39,12 @@ def login():
     
     access_token = create_access_token(identity=str(user.id))
     return jsonify(access_token=access_token), 200
+
+@auth_bp.post('/logout')
+def logout():
+    """用户退出登录"""
+    jti = get_jwt()["jti"]
+    now = datetime.utcnow()
+    db.session.add(TokenBlocklist(jti=jti, created_at=now))
+    db.session.commit()
+    return jsonify(message="退出登录成功"), 200

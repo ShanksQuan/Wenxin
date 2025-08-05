@@ -34,3 +34,11 @@ class UserInfo(db.Model):
     description = db.Column(db.Text)  # 提取的信息详细描述
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+class TokenBlocklist(db.Model):
+    """Token黑名单模型"""
+    __tablename__ = 'token_blocklist'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(36), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
