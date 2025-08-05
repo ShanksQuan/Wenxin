@@ -18,13 +18,14 @@ def allowed_file(filename):
 @jwt_required()
 def upload_info():
     """上传信息并进行分类处理"""
-    user_id =int( get_jwt_identity())
+    user_id = int(get_jwt_identity())
     
     # 检查是否有文件或文本内容
     if 'file' not in request.files and 'text' not in request.form:
         return jsonify({'error': '没有提供文件或文本内容'}), 400
     
     info_items = []
+    user_infos = []  # 存储待提交的用户信息对象
     
     # 处理文件上传
     if 'file' in request.files:
@@ -56,8 +57,8 @@ def upload_info():
                         description=item['description']
                     )
                     db.session.add(user_info)
+                    user_infos.append(user_info)  # 添加到待提交列表
                     info_items.append({
-                        'id': user_info.id,
                         'title': item['title'],
                         'category': item['category']
                     })
@@ -74,8 +75,8 @@ def upload_info():
                     description='上传的图片文件'
                 )
                 db.session.add(user_info)
+                user_infos.append(user_info)  # 添加到待提交列表
                 info_items.append({
-                    'id': user_info.id,
                     'title': '图片文件',
                     'category': 'temporary'
                 })
@@ -103,8 +104,8 @@ def upload_info():
                     description=item['description']
                 )
                 db.session.add(user_info)
+                user_infos.append(user_info)  # 添加到待提交列表
                 info_items.append({
-                    'id': user_info.id,
                     'title': item['title'],
                     'category': item['category']
                 })
@@ -121,39 +122,23 @@ def upload_info():
                 description=content
             )
             db.session.add(user_info)
+            user_infos.append(user_info)  # 添加到待提交列表
             info_items.append({
-                'id': user_info.id,
                 'title': '文本内容',
                 'category': 'temporary'
             })
     
     db.session.commit()
     
+    # 在提交后获取实际的ID并更新返回信息
+    for i, user_info in enumerate(user_infos):
+        info_items[i]['id'] = user_info.id
+    
     return jsonify({
         'message': '信息上传并分类成功',
         'info_items': info_items
-    }), 201
+    }), 201@process_bp.route('/info', methods=['GET'])
 
-@process_bp.route('/info/<int:info_id>', methods=['GET'])
-@jwt_required()
-def get_info(info_id):
-    """获取特定信息详情"""
-    user_id = int(get_jwt_identity())
-    
-    info = UserInfo.query.filter_by(id=info_id, user_id=user_id).first()
-    if not info:
-        return jsonify({'error': '信息不存在'}), 404
-    
-    return jsonify({
-        'id': info.id,
-        'info_type': info.info_type,
-        'content': info.content,
-        'category': info.category,
-        'title': info.title,
-        'description': info.description,
-        'created_at': info.created_at.isoformat(),
-        'updated_at': info.updated_at.isoformat() if info.updated_at else None
-    }), 200
 
 @process_bp.route('/info', methods=['GET'])
 @jwt_required()
@@ -179,3 +164,24 @@ def list_info():
         'category': info.category,
         'created_at': info.created_at.isoformat()
     } for info in infos]), 200
+
+@process_bp.route('/info/<int:info_id>', methods=['GET'])
+@jwt_required()
+def get_info(info_id):
+    """获取特定信息详情"""
+    user_id = int(get_jwt_identity())
+    
+    info = UserInfo.query.filter_by(id=info_id, user_id=user_id).first()
+    if not info:
+        return jsonify({'error': '信息不存在'}), 404
+    
+    return jsonify({
+        'id': info.id,
+        'info_type': info.info_type,
+        'content': info.content,
+        'category': info.category,
+        'title': info.title,
+        'description': info.description,
+        'created_at': info.created_at.isoformat(),
+        'updated_at': info.updated_at.isoformat() if info.updated_at else None
+    }), 200
