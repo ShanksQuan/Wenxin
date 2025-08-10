@@ -88,8 +88,12 @@ def process_image_with_ai(image_path):
         dashscope.api_key = current_app.config.get('DASHSCOPE_API_KEY')
         
         # 将图片转换为base64
-        with open(image_path, "rb") as image_file:
-            encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
+        
+        # 构建文件路径（根据操作系统）
+        if os.name == 'nt':  # Windows系统
+            file_url = f"file:///{image_path}"
+        else:  # Linux或macOS系统
+            file_url = f"file://{image_path}"
         
         prompt = """
         请分析这张图片中的内容，从中提取出多个独立的信息项，并为每个信息项分配适当的分类。
@@ -126,7 +130,7 @@ def process_image_with_ai(image_path):
                 "role": "user",
                 "content": [
                     {"text": prompt},
-                    {"image": f"data:image/jpeg;base64,{encoded_image}"}
+                    {"image": file_url}
                 ]
             }
         ]
