@@ -1,18 +1,20 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 
 
 # 初始化扩展
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
-
+cors = CORS()
 def init_extensions(app):
     """初始化所有扩展"""
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    cors.init_app(app)
 
     # 将TokenBlocklist的导入移到函数内部，避免循环导入
     from app.models.user_info import TokenBlocklist
