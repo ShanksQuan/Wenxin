@@ -3,7 +3,7 @@ import uuid
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models.user_info import UserInfo,Conversation
+from app.models.user_info import UserInfo, Conversation
 from app.utils.ai_process import process_text_with_ai, process_image_with_ai
 
 
@@ -21,7 +21,7 @@ def upload_info():
     """上传信息并进行分类处理"""
     user_id = int(get_jwt_identity())
     
-    # 新增：获取对话ID（必传参数）
+    # 获取对话ID（必传参数）
     conversation_id = request.form.get('conversation_id')
     if not conversation_id:
         return jsonify({'error': '缺少conversation_id参数（必须指定对话）'}), 400
@@ -55,17 +55,17 @@ def upload_info():
             
             # 确保上传目录存在
             os.makedirs(os.path.dirname(file_path) if os.path.dirname(file_path) else '.', exist_ok=True)
-            
             file.save(file_path)
             
             # 使用AI处理图片并提取多个信息项
             try:
                 extracted_items = process_image_with_ai(file_path)
                 
-                # 为每个提取的信息项创建数据库记录
+                # 为每个提取的信息项创建数据库记录（仅保留这一个循环）
                 for item in extracted_items:
                     user_info = UserInfo(
                         user_id=user_id,
+                        conversation_id=conversation_id,
                         info_type=info_type,
                         content=file_path,
                         category=item['category'],
@@ -73,7 +73,7 @@ def upload_info():
                         description=item['description']
                     )
                     db.session.add(user_info)
-                    user_infos.append(user_info)  # 添加到待提交列表
+                    user_infos.append(user_info)
                     info_items.append({
                         'title': item['title'],
                         'category': item['category']
@@ -84,6 +84,7 @@ def upload_info():
                 print(f"AI处理图片时出错: {e}")
                 user_info = UserInfo(
                     user_id=user_id,
+                    conversation_id=conversation_id,
                     info_type=info_type,
                     content=file_path,
                     category='temporary',
@@ -91,31 +92,13 @@ def upload_info():
                     description='上传的图片文件'
                 )
                 db.session.add(user_info)
-                user_infos.append(user_info)  # 添加到待提交列表
+                user_infos.append(user_info)
                 info_items.append({
                     'title': '图片文件',
                     'category': 'temporary'
                 })
-
         else:
             return jsonify({'error': '文件类型不支持'}), 400
-        for item in extracted_items:
-                user_info = UserInfo(
-                    user_id=user_id,
-                    conversation_id=conversation_id,  # 关联对话
-                    info_type=info_type,
-                    content=file_path,
-                    category=item['category'],
-                    title=item['title'],
-                    description=item['description']
-                )
-                db.session.add(user_info)
-                user_infos.append(user_info)
-                info_items.append({
-                    'id': user_info.id,
-                    'title': item['title'],
-                    'category': item['category']
-                })
     
     # 处理文本内容
     elif 'text' in request.form:
@@ -126,10 +109,11 @@ def upload_info():
         try:
             extracted_items = process_text_with_ai(content)
             
-            # 为每个提取的信息项创建数据库记录
+            # 为每个提取的信息项创建数据库记录（仅保留这一个循环）
             for item in extracted_items:
                 user_info = UserInfo(
                     user_id=user_id,
+                    conversation_id=conversation_id,
                     info_type=info_type,
                     content=content,
                     category=item['category'],
@@ -137,7 +121,7 @@ def upload_info():
                     description=item['description']
                 )
                 db.session.add(user_info)
-                user_infos.append(user_info)  # 添加到待提交列表
+                user_infos.append(user_info)
                 info_items.append({
                     'title': item['title'],
                     'category': item['category']
@@ -148,6 +132,7 @@ def upload_info():
             print(f"AI处理文本时出错: {e}")
             user_info = UserInfo(
                 user_id=user_id,
+                conversation_id=conversation_id,
                 info_type=info_type,
                 content=content,
                 category='temporary',
@@ -155,37 +140,18 @@ def upload_info():
                 description=content
             )
             db.session.add(user_info)
-            user_infos.append(user_info)  # 添加到待提交列表
+            user_infos.append(user_info)
             info_items.append({
                 'title': '文本内容',
                 'category': 'temporary'
             })
     
-
-         # 为每个信息项创建记录（新增关联conversation_id）
-        for item in extracted_items:
-            user_info = UserInfo(
-                user_id=user_id,
-                conversation_id=conversation_id,  # 关联对话
-                info_type=info_type,
-                content=content,
-                category=item['category'],
-                title=item['title'],
-                description=item['description']
-            )
-            db.session.add(user_info)
-            user_infos.append(user_info)
-            info_items.append({
-                'id': user_info.id,
-                'title': item['title'],
-                'category': item['category']
-            })
-     # 关键：首次上传时，用第一个信息项的标题更新对话标题
+    # 首次上传时，用第一个信息项的标题更新对话标题
     if is_first_upload and info_items:
-        conversation.title = info_items[0]['title'][:50]  # 限制标题长度（避免过长）
+        conversation.title = info_items[0]['title'][:50]  # 限制标题长度
     db.session.commit()
     
-    # 在提交后获取实际的ID并更新返回信息
+    # 提交后更新返回信息中的ID
     for i, user_info in enumerate(user_infos):
         info_items[i]['id'] = user_info.id
     
@@ -193,7 +159,6 @@ def upload_info():
         'message': '信息上传并分类成功',
         'info_items': info_items
     }), 201
-
 
 
 @process_bp.route('/info', methods=['GET'])

@@ -32,7 +32,7 @@ class User(db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_time)
     
     # 关联用户信息
     user_infos = db.relationship('UserInfo', backref='owner', lazy='dynamic')
@@ -57,8 +57,8 @@ class UserInfo(db.Model):
     category = db.Column(db.String(32), default='temporary')  # 分类: temporary, meeting, work, finance
     title = db.Column(db.String(255))  # 提取的信息标题
     description = db.Column(db.Text)  # 提取的信息详细描述
-    created_at = db.Column(db.DateTime, default=beijing_time.utcnow)
-    updated_at = db.Column(db.DateTime, onupdate=beijing_time.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_time)
+    updated_at = db.Column(db.DateTime, onupdate=beijing_time)
 
 class TokenBlocklist(db.Model):
     """Token黑名单模型"""
@@ -66,4 +66,4 @@ class TokenBlocklist(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     jti = db.Column(db.String(36), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=beijing_time.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=beijing_time, nullable=False)
