@@ -1,11 +1,33 @@
 from app.extensions import db
-from datetime import datetime
+from datetime import datetime,timedelta
 from werkzeug.security import generate_password_hash
+
+#获取北京时间
+def beijing_time():
+    return datetime.utcnow() + timedelta(hours=8)
+
+# 对话模型（管理单个对话）
+class Conversation(db.Model):
+    """对话模型（包含多个UserInfo信息项）"""
+    __tablename__ = 'conversations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # 关联用户
+    title = db.Column(db.String(255), nullable=False)  # 对话标题（取自首次上传内容）
+    created_at = db.Column(db.DateTime, default=beijing_time)  # 对话创建时间（北京时间）
+    updated_at = db.Column(db.DateTime, onupdate=beijing_time)  # 最后更新时间
+    
+    # 关联该对话下的所有信息项
+    info_items = db.relationship('UserInfo', backref='conversation', lazy='dynamic', cascade='all, delete-orphan')
+
+
 
 class User(db.Model):
     """用户模型"""
     __tablename__ = 'users'
     
+    
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -23,6 +45,9 @@ class UserInfo(db.Model):
     """用户信息模型"""
     __tablename__ = 'user_infos'
     
+    # 新增：关联对话的外键
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     info_type = db.Column(db.String(32), nullable=False)  # text, image, voice
@@ -32,8 +57,8 @@ class UserInfo(db.Model):
     category = db.Column(db.String(32), default='temporary')  # 分类: temporary, meeting, work, finance
     title = db.Column(db.String(255))  # 提取的信息标题
     description = db.Column(db.Text)  # 提取的信息详细描述
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_time.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=beijing_time.utcnow)
 
 class TokenBlocklist(db.Model):
     """Token黑名单模型"""
@@ -41,4 +66,4 @@ class TokenBlocklist(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     jti = db.Column(db.String(36), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=beijing_time.utcnow, nullable=False)

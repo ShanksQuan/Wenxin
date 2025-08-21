@@ -3,8 +3,9 @@ import uuid
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models.user_info import UserInfo
+from app.models.user_info import UserInfo,Conversation
 from app.utils.ai_process import process_text_with_ai, process_image_with_ai
+
 
 process_bp = Blueprint('process', __name__)
 
@@ -20,6 +21,21 @@ def upload_info():
     """上传信息并进行分类处理"""
     user_id = int(get_jwt_identity())
     
+    # 新增：获取对话ID（必传参数）
+    conversation_id = request.form.get('conversation_id')
+    if not conversation_id:
+        return jsonify({'error': '缺少conversation_id参数（必须指定对话）'}), 400
+    try:
+        conversation_id = int(conversation_id)
+    except ValueError:
+        return jsonify({'error': 'conversation_id必须是整数'}), 400
+    
+    # 验证对话是否属于当前用户
+    conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
+    if not conversation:
+        return jsonify({'error': '对话不存在或无权访问'}), 404
+    # 判断是否为首次上传
+    is_first_upload = not UserInfo.query.filter_by(conversation_id=conversation_id).first()
     # 检查是否有文件或文本内容
     if 'file' not in request.files and 'text' not in request.form:
         return jsonify({'error': '没有提供文件或文本内容'}), 400
@@ -80,9 +96,26 @@ def upload_info():
                     'title': '图片文件',
                     'category': 'temporary'
                 })
-        
+
         else:
             return jsonify({'error': '文件类型不支持'}), 400
+        for item in extracted_items:
+                user_info = UserInfo(
+                    user_id=user_id,
+                    conversation_id=conversation_id,  # 关联对话
+                    info_type=info_type,
+                    content=file_path,
+                    category=item['category'],
+                    title=item['title'],
+                    description=item['description']
+                )
+                db.session.add(user_info)
+                user_infos.append(user_info)
+                info_items.append({
+                    'id': user_info.id,
+                    'title': item['title'],
+                    'category': item['category']
+                })
     
     # 处理文本内容
     elif 'text' in request.form:
@@ -128,6 +161,28 @@ def upload_info():
                 'category': 'temporary'
             })
     
+
+         # 为每个信息项创建记录（新增关联conversation_id）
+        for item in extracted_items:
+            user_info = UserInfo(
+                user_id=user_id,
+                conversation_id=conversation_id,  # 关联对话
+                info_type=info_type,
+                content=content,
+                category=item['category'],
+                title=item['title'],
+                description=item['description']
+            )
+            db.session.add(user_info)
+            user_infos.append(user_info)
+            info_items.append({
+                'id': user_info.id,
+                'title': item['title'],
+                'category': item['category']
+            })
+     # 关键：首次上传时，用第一个信息项的标题更新对话标题
+    if is_first_upload and info_items:
+        conversation.title = info_items[0]['title'][:50]  # 限制标题长度（避免过长）
     db.session.commit()
     
     # 在提交后获取实际的ID并更新返回信息
