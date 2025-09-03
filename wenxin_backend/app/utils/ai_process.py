@@ -1,7 +1,5 @@
 import json
 from flask import current_app
-# Deleted: import openai
-# Deleted: import base64
 import dashscope
 from dashscope import Generation
 import base64
@@ -171,3 +169,49 @@ def process_image_with_ai(image_path):
             'description': '从图片中提取的内容',
             'category': 'temporary'
         }]
+    
+def detect_savable_info(conversation_text):
+    """检测对话内容中是否包含可保存的关键信息"""
+    try:
+        dashscope.api_key = current_app.config.get('DASHSCOPE_API_KEY')
+        
+        prompt = f"""
+        分析以下对话内容，判断是否包含需要保存的关键信息（会议安排、工作任务、财务收支等）。
+        只需返回"需要保存"或"无需保存"，不要添加其他内容。
+        
+        对话内容：{conversation_text}
+        """
+        
+        response = Generation.call(
+            model='qwen-plus',
+            messages=[{'role': 'user', 'content': prompt}],
+            result_format='message'
+        )
+        
+        result = response.output.choices[0].message.content.strip()
+        return result == "需要保存"
+    
+    except Exception as e:
+        print(f"关键信息检测错误: {e}")
+        return False
+    
+def estimate_token_length(text):
+    """估算文本的token长度(1个汉字≈1token,1个英文单词≈1token)"""
+    # 简单估算：中文按字符数，英文按空格分割的单词数
+    chinese_chars = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
+    english_words = len(text.split())
+    return chinese_chars + english_words
+
+def truncate_context(context, max_tokens=1000):
+    """截断对话上下文,确保总token不超过上限"""
+    total_tokens = 0
+    truncated = []
+    # 倒序添加，优先保留最新消息
+    for msg in reversed(context):
+        msg_tokens = estimate_token_length(msg['content'])
+        if total_tokens + msg_tokens > max_tokens:
+            continue
+        truncated.append(msg)
+        total_tokens += msg_tokens
+    # 恢复正序
+    return list(reversed(truncated))

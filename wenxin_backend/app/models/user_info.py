@@ -67,3 +67,18 @@ class TokenBlocklist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     jti = db.Column(db.String(36), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=beijing_time, nullable=False)
+
+
+class Message(db.Model):
+    """对话消息模型（用户与智能体的交互内容）"""
+    __tablename__ = 'messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)  # 关联对话
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # 关联用户
+    role = db.Column(db.String(10), nullable=False)  # 角色：user/assistant
+    content = db.Column(db.Text, nullable=False)  # 消息内容
+    created_at = db.Column(db.DateTime, default=beijing_time)  # 消息时间
+    
+    # 关联关系
+    conversation = db.relationship('Conversation', backref=db.backref('messages', lazy='dynamic', cascade='all, delete-orphan'))
