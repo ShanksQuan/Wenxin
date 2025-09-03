@@ -168,7 +168,9 @@ def send_message(conv_id):
         2. 当对话中涉及需要记录的信息（如会议安排、工作任务、财务收支等）时，会提示用户是否需要保存
         3. 回复简洁明了，符合中文表达习惯
 
-        当识别到可保存的信息时，必须在回复末尾添加以下快捷操作提示：
+        重要要求：
+        - 当用户与你打招呼的时候,请介绍自己是问心智能体。
+        - 当识别到可保存的信息时，必须在回复末尾添加以下快捷操作提示：
         【如需保存以上信息，请回复"保存"或点击保存按钮】
         """
         
@@ -184,11 +186,6 @@ def send_message(conv_id):
         )
         assistant_reply = response.output.choices[0].message.content
         
-        # 检测是否包含可保存信息（拼接用户消息和初始回复）
-        full_conversation = f"用户: {user_message}\n智能体:{assistant_reply}"
-        if detect_savable_info(full_conversation):
-        # 附加保存询问
-            assistant_reply += "\n\n检测到可能需要保存的信息,是否需要为你保存?（回复'是'或'保存'即可）"
         
     except Exception as e:
         print(f"AI回复生成失败: {e}")
